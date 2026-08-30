@@ -3,10 +3,24 @@
 //
 // One small provider-agnostic surface so the inbox draft route and the
 // inbound auto-reply bot both talk to `generateReply` without caring
-// whether the account is on OpenAI or Anthropic.
+// whether the account is on OpenAI, Anthropic or OpenRouter.
 // ============================================================
 
-export type AiProvider = 'openai' | 'anthropic'
+/** Every provider the account may point its BYO key at. `openrouter` is
+ *  a gateway rather than a first-party lab: one key, and the `model`
+ *  field selects any model in its catalogue (`vendor/model-id`). */
+export const AI_PROVIDERS = ['openai', 'anthropic', 'openrouter'] as const
+
+export type AiProvider = (typeof AI_PROVIDERS)[number]
+
+/** Narrow untrusted input (request body, DB row) to a supported
+ *  provider. Keeps the API routes, the UI and the DB CHECK constraint
+ *  from drifting apart as providers are added. */
+export function isAiProvider(value: unknown): value is AiProvider {
+  return (
+    typeof value === 'string' && (AI_PROVIDERS as readonly string[]).includes(value)
+  )
+}
 
 /**
  * Account AI setup, decrypted and ready to use. Produced by
@@ -39,20 +53,82 @@ export interface ChatMessage {
 
 /**
  * Token counts for one provider call, normalized across OpenAI
- * (`prompt`/`completion`) and Anthropic (`input`/`output`). Null when
- * the provider didn't return usage. Logged to `ai_usage_log`.
+ * (`prompt`/`completion`), OpenRouter (same shape — an OpenAI-compatible
+ * gateway, see providers/openai-compatible.ts), and Anthropic
+ * (`input`/`output`). Null (the whole `AiUsage | null`) when the
+ * provider didn't return usage at all. Logged to `ai_usage_log`.
  */
 export interface AiUsage {
   promptTokens: number
   completionTokens: number
   totalTokens: number
+  /** Anthropic prompt caching only (FASE 8) — tokens spent WRITING a new
+   *  cache entry this call (billed at a premium over a normal input
+   *  token). Present only when Anthropic's response actually reported
+   *  `cache_creation_input_tokens`; omitted entirely for every other
+   *  provider and for an Anthropic call that didn't create a cache
+   *  entry — never coerced to 0, matching the FASE 2 breakdown metrics'
+   *  "NULL means never computed" discipline (see usage.ts). Distinct
+   *  from `promptTokens`, which Anthropic already reports net of any
+   *  cached tokens — never add this into `promptTokens` yourself. */
+  cacheCreationInputTokens?: number
+  /** Anthropic prompt caching only — tokens served FROM an existing
+   *  cache entry this call (billed at a steep discount vs. a normal
+   *  input token). Same "present only when actually reported" rule as
+   *  `cacheCreationInputTokens` above. */
+  cacheReadInputTokens?: number
 }
 
-/** Raw text + usage a provider adapter returns before handoff parsing. */
+/** Raw text + usage a provider adapter returns before handoff parsing.
+ *  `toolCalls` records every tool invocation the provider's internal
+ *  tool-calling loop made while producing `text`, in call order — used
+ *  by callers (e.g. auto-reply's media side-effect) to react to a
+ *  specific tool having run, without re-parsing the model's prose. */
 export interface ProviderResult {
   text: string
   usage: AiUsage | null
+  toolCalls?: ToolCallLogEntry[]
 }
+
+/** One completed tool call from a provider's internal tool-calling loop
+ *  (see providers/openai-compatible.ts and providers/anthropic.ts). */
+export interface ToolCallLogEntry {
+  name: string
+  input: unknown
+  /** The whitelisted result actually sent back to the model — never the
+   *  raw provider/ERP payload. */
+  result: unknown
+}
+
+/**
+ * Provider-agnostic tool definition. Each adapter (OpenAI-compatible,
+ * Anthropic) translates this into its own wire format
+ * (`tools[].function` for OpenAI, `tools[]` with `input_schema` for
+ * Anthropic) — see docs/integrations/ai-data-integration/
+ * 01_MASTER_EXECUTION.md ("TOOL CALLING").
+ */
+export interface ToolSpec {
+  name: string
+  description: string
+  /** JSON Schema for the tool's input — `{type:'object', properties, required}`. */
+  inputSchema: Record<string, unknown>
+}
+
+export interface ToolCallRequest {
+  id: string
+  name: string
+  input: unknown
+}
+
+/**
+ * Executes one tool call server-side and returns a JSON-serializable
+ * result to send back to the model. Must never throw for a business-
+ * level failure (not found, invalid args) — return a `{error: "..."}`
+ * shape instead, so the model can react in-conversation; reserve
+ * throwing for infrastructure failure the caller should treat as the
+ * whole generation failing.
+ */
+export type ToolExecutor = (call: ToolCallRequest) => Promise<unknown>
 
 /** Outcome of a generation call. */
 export interface GenerateResult {
@@ -62,6 +138,10 @@ export interface GenerateResult {
   handoff: boolean
   /** Provider token usage for this call, or null when unavailable. */
   usage: AiUsage | null
+  /** Tool calls made while producing this reply, in call order. Empty
+   *  when no `tools` were passed to `generateReply` or the model didn't
+   *  use any. */
+  toolCalls: ToolCallLogEntry[]
 }
 
 /**
