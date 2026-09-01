@@ -282,9 +282,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           account_role: accountRole,
         });
         setAccount(accountRow);
-          }
-          return; // Success
-        } else {
+        return; // Success
+      } else {
           // If profile is missing or missing account_id/role, auto-create
           try {
             const res = await fetch('/api/auth/ensure-profile', { method: 'POST' });
@@ -292,7 +291,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               const resData = await res.json();
               if (resData.success && resData.account_id) {
                 await sleep(500);
-                continue; // Retry fetch
+                return; // Retry fetch by returning, it will be triggered again if needed
               }
             }
           } catch (e) {
@@ -300,16 +299,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           }
 
           lastFetchedUserIdRef.current = null;
-          if (data) {
-            setStatusDetail(
-              `profile ${data.id} has no ${!data.account_id ? "account_id" : "account_role"}`,
-            );
-          } else {
-            setStatusDetail("no profiles row for the signed-in user");
-          }
+          setStatusDetail("no profiles row for the signed-in user");
           return;
         }
-      }
     } catch (err) {
       console.error("[AuthProvider] fetchProfile threw:", err);
       lastFetchedUserIdRef.current = null;
