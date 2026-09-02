@@ -39,7 +39,7 @@ function icuHostileKeys(): string[] {
     const t = createTranslator({
       locale: 'en',
       messages: catalogue,
-      onError: (err) => {
+      onError: (err: any) => {
         code = err.code;
       },
     });

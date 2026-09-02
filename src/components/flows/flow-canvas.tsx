@@ -396,7 +396,7 @@ function FlowCanvasInner() {
   // Writing only on dragStop (not on every position-change tick during
   // the drag) keeps state updates cheap on long drags.
   const handleNodeDragStop = useCallback<OnNodeDrag<RfNode<NodeData>>>(
-    (_event, node) => {
+    (_event: any, node: any) => {
       updateNodePosition(node.id, node.position.x, node.position.y);
     },
     [updateNodePosition]
@@ -561,7 +561,7 @@ function FlowCanvasInner() {
           <MiniMap
             pannable
             zoomable
-            nodeColor={(n) =>
+            nodeColor={(n: any) =>
               nodeColors((n.data as NodeData).node.node_type).solid
             }
             nodeStrokeWidth={0}

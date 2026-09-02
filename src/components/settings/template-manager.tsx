@@ -653,7 +653,7 @@ export function TemplateManager() {
           {form.category === 'Authentication' && (
             <div className="flex items-start gap-2 rounded border border-amber-700/40 bg-amber-950/30 px-3 py-2 text-xs text-amber-300">
               <AlertCircle className="size-4 mt-0.5 shrink-0" />
-              <p>{t.rich('authWarning', { bold: (chunks) => <strong>{chunks}</strong> })}</p>
+              <p>{t.rich('authWarning', { bold: (chunks: any) => <strong>{chunks}</strong> })}</p>
             </div>
           )}
 
@@ -724,7 +724,7 @@ export function TemplateManager() {
                   {editingId ? (
                     t('langFixed')
                   ) : (
-                    <span>{t.rich('langHint', { code: (chunks) => <code>{chunks}</code> })}</span>
+                    <span>{t.rich('langHint', { code: (chunks: any) => <code>{chunks}</code> })}</span>
                   )}
                 </p>
               </div>

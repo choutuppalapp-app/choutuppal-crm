@@ -76,21 +76,21 @@ export async function POST(request: Request) {
         process.env.NEXT_PUBLIC_SUPABASE_URL,
         process.env.SUPABASE_SERVICE_ROLE_KEY
       )
-      const { data: userObj } = await adminClient.auth.admin.getUserById(user.id)
+      const { data: userObj } = await adminClient.auth.admin.getUserById(userId)
       const email = userObj?.user?.email || 'Unknown'
       const fullName = userObj?.user?.user_metadata?.full_name || email
       
       const { data: newAccount } = await adminClient
         .from('accounts')
-        .insert({ name: fullName, owner_user_id: user.id })
+        .insert({ name: fullName, owner_user_id: userId })
         .select('id')
         .single()
         
       if (newAccount) {
         if (profile) {
-          await adminClient.from('profiles').update({ account_id: newAccount.id, account_role: 'owner' }).eq('user_id', user.id)
+          await adminClient.from('profiles').update({ account_id: newAccount.id, account_role: 'owner' }).eq('user_id', userId)
         } else {
-          await adminClient.from('profiles').insert({ user_id: user.id, full_name: fullName, email: email, account_id: newAccount.id, account_role: 'owner' })
+          await adminClient.from('profiles').insert({ user_id: userId, full_name: fullName, email: email, account_id: newAccount.id, account_role: 'owner' })
         }
         accountId = newAccount.id as string
       } else {
