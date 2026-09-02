@@ -1,32 +1,119 @@
 import { NextResponse } from 'next/server'
+import { createClient } from '@/lib/supabase/server'
+
+async function getAccountId() {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return null
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('account_id')
+    .eq('user_id', user.id)
+    .single()
+  
+  return profile?.account_id || null
+}
 
 export async function GET() {
-  const phone_number_id = process.env.WHATSAPP_PHONE_NUMBER_ID;
-  const access_token = process.env.WHATSAPP_TOKEN;
+  const accountId = await getAccountId()
+  if (!accountId) {
+    // Return not connected if no account linked
+    return NextResponse.json({ connected: false, reason: 'no_account' }, { status: 200 })
+  }
 
-  if (access_token && phone_number_id) {
+  const adminClient = require('@supabase/supabase-js').createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL,
+    process.env.SUPABASE_SERVICE_ROLE_KEY
+  )
+
+  const { data, error } = await adminClient
+    .from('whatsapp_config')
+    .select('*')
+    .eq('account_id', accountId)
+    .single()
+
+  if (data) {
     return NextResponse.json({ 
       connected: true, 
-      phoneNumberId: phone_number_id,
-      phone_info: { verified_name: phone_number_id }
-    });
+      phoneNumberId: data.phone_number_id,
+      whatsappBusinessId: data.waba_id,
+      accessToken: data.access_token,
+      verifyToken: data.verify_token,
+      phone_info: { verified_name: data.phone_number_id }
+    })
   }
 
   return NextResponse.json(
-    { connected: false, reason: 'no_config', message: 'No configuration found in environment variables.' },
+    { connected: false, reason: 'no_config', message: 'No configuration found in database.' },
     { status: 200 }
-  );
+  )
 }
 
 export async function POST(request: Request) {
-  console.log("Attempted to save WhatsApp config, bypassing Supabase.");
-  return NextResponse.json({ 
-    success: true, 
-    saved: true, 
-    registered: true 
-  });
+  try {
+    const accountId = await getAccountId()
+    if (!accountId) {
+      return NextResponse.json({ error: 'Your profile is not linked to an account.' }, { status: 403 })
+    }
+
+    const body = await request.json()
+    const { phoneNumberId, whatsappBusinessId, accessToken, verifyToken } = body
+
+    const adminClient = require('@supabase/supabase-js').createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL,
+      process.env.SUPABASE_SERVICE_ROLE_KEY
+    )
+    
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+
+    // Using upsert with account_id
+    const { error } = await adminClient
+      .from('whatsapp_config')
+      .upsert(
+        {
+          account_id: accountId,
+          user_id: user?.id,
+          phone_number_id: phoneNumberId,
+          waba_id: whatsappBusinessId,
+          access_token: accessToken,
+          verify_token: verifyToken,
+          status: 'connected',
+        },
+        { onConflict: 'account_id' }
+      )
+
+    if (error) {
+      throw error
+    }
+
+    return NextResponse.json({ 
+      success: true, 
+      saved: true, 
+      registered: true 
+    })
+  } catch (err: any) {
+    console.error(err)
+    return NextResponse.json({ error: err.message }, { status: 500 })
+  }
 }
 
 export async function DELETE() {
-  return NextResponse.json({ success: true });
+  try {
+    const accountId = await getAccountId()
+    if (!accountId) {
+      return NextResponse.json({ error: 'Your profile is not linked to an account.' }, { status: 403 })
+    }
+
+    const adminClient = require('@supabase/supabase-js').createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL,
+      process.env.SUPABASE_SERVICE_ROLE_KEY
+    )
+
+    await adminClient.from('whatsapp_config').delete().eq('account_id', accountId)
+    return NextResponse.json({ success: true })
+  } catch (err: any) {
+    return NextResponse.json({ error: err.message }, { status: 500 })
+  }
 }

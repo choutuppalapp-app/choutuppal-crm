@@ -7,6 +7,8 @@ import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { SettingsPanelHead } from './settings-panel-head';
 
 export function WhatsAppConfig() {
@@ -14,6 +16,12 @@ export function WhatsAppConfig() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [connected, setConnected] = useState(false);
+  const [formData, setFormData] = useState({
+    phoneNumberId: '',
+    whatsappBusinessId: '',
+    accessToken: '',
+    verifyToken: ''
+  });
 
   useEffect(() => {
     async function checkStatus() {
@@ -22,6 +30,12 @@ export function WhatsAppConfig() {
         const data = await res.json();
         if (data.connected) {
           setConnected(true);
+          setFormData({
+            phoneNumberId: data.phoneNumberId || '',
+            whatsappBusinessId: data.whatsappBusinessId || '',
+            accessToken: data.accessToken || '',
+            verifyToken: data.verifyToken || ''
+          });
         }
       } catch (e) {
         console.error(e);
@@ -32,23 +46,24 @@ export function WhatsAppConfig() {
     checkStatus();
   }, []);
 
-  async function handleConnect() {
+  async function handleSave(e: React.FormEvent) {
+    e.preventDefault();
     try {
       setSaving(true);
       const res = await fetch('/api/whatsapp/config', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({}),
+        body: JSON.stringify(formData),
       });
       const data = await res.json();
       if (res.ok && data.success) {
         setConnected(true);
-        toast.success('Connected');
+        toast.success('Configuration saved');
       } else {
-        toast.error('Failed to connect');
+        toast.error(data.error || 'Failed to save configuration');
       }
     } catch (e) {
-      toast.error('Error connecting');
+      toast.error('Error saving configuration');
     } finally {
       setSaving(false);
     }
@@ -81,24 +96,68 @@ export function WhatsAppConfig() {
             </AlertTitle>
           </div>
           <AlertDescription className="text-muted-foreground">
-            {connected ? 'WhatsApp integration is connected.' : 'Click connect to link WhatsApp.'}
+            {connected ? 'WhatsApp integration is configured.' : 'Enter your WhatsApp credentials.'}
           </AlertDescription>
         </Alert>
 
         <Card>
           <CardHeader>
             <CardTitle>WhatsApp Connection</CardTitle>
-            <CardDescription>Connect via Environment Variables</CardDescription>
+            <CardDescription>Configure your WhatsApp API credentials</CardDescription>
           </CardHeader>
           <CardContent>
-            <Button
-              onClick={handleConnect}
-              disabled={saving || connected}
-              className="bg-primary text-primary-foreground"
-            >
-              {saving && <Loader2 className="mr-2 size-4 animate-spin" />}
-              {connected ? 'Connected' : 'Connect'}
-            </Button>
+            <form onSubmit={handleSave} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="phoneNumberId">Phone Number ID</Label>
+                <Input
+                  id="phoneNumberId"
+                  value={formData.phoneNumberId}
+                  onChange={(e) => setFormData({ ...formData, phoneNumberId: e.target.value })}
+                  placeholder="e.g. 1319461771247406"
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="whatsappBusinessId">WhatsApp Business ID</Label>
+                <Input
+                  id="whatsappBusinessId"
+                  value={formData.whatsappBusinessId}
+                  onChange={(e) => setFormData({ ...formData, whatsappBusinessId: e.target.value })}
+                  placeholder="e.g. 1729361504779547"
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="accessToken">Access Token</Label>
+                <Input
+                  id="accessToken"
+                  type="password"
+                  value={formData.accessToken}
+                  onChange={(e) => setFormData({ ...formData, accessToken: e.target.value })}
+                  placeholder="EAA..."
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="verifyToken">Verify Token</Label>
+                <Input
+                  id="verifyToken"
+                  type="password"
+                  value={formData.verifyToken}
+                  onChange={(e) => setFormData({ ...formData, verifyToken: e.target.value })}
+                  placeholder="Your custom verify token"
+                  required
+                />
+              </div>
+              <Button
+                type="submit"
+                disabled={saving}
+                className="bg-primary text-primary-foreground"
+              >
+                {saving && <Loader2 className="mr-2 size-4 animate-spin" />}
+                Save Configuration
+              </Button>
+            </form>
           </CardContent>
         </Card>
       </div>
