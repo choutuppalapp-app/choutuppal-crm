@@ -46,6 +46,25 @@ export function WhatsAppConfig() {
     checkStatus();
   }, []);
 
+  const [testing, setTesting] = useState(false);
+
+  async function handleTestApi() {
+    try {
+      setTesting(true);
+      const res = await fetch('/api/whatsapp/test');
+      const data = await res.json();
+      if (res.ok && data.success) {
+        toast.success('API connection successful!');
+      } else {
+        toast.error(data.error || 'Failed to connect to Meta API');
+      }
+    } catch (e) {
+      toast.error('Error connecting to API');
+    } finally {
+      setTesting(false);
+    }
+  }
+
   async function handleSave(e: React.FormEvent) {
     e.preventDefault();
     try {
@@ -149,14 +168,25 @@ export function WhatsAppConfig() {
                   required
                 />
               </div>
-              <Button
-                type="submit"
-                disabled={saving}
-                className="bg-primary text-primary-foreground"
-              >
-                {saving && <Loader2 className="mr-2 size-4 animate-spin" />}
-                Save Configuration
-              </Button>
+              <div className="flex gap-2">
+                <Button
+                  type="submit"
+                  disabled={saving}
+                  className="bg-primary text-primary-foreground"
+                >
+                  {saving && <Loader2 className="mr-2 size-4 animate-spin" />}
+                  Save Configuration
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleTestApi}
+                  disabled={testing || !connected}
+                >
+                  {testing && <Loader2 className="mr-2 size-4 animate-spin" />}
+                  Test API
+                </Button>
+              </div>
             </form>
           </CardContent>
         </Card>
