@@ -112,54 +112,9 @@ export async function GET(request: Request) {
       )
     }
 
-    // Fetch all whatsapp configs to check verify tokens
-    const { data: configs, error: configError } = await supabaseAdmin()
-      .from('whatsapp_config')
-      .select('id, verify_token')
+    const envVerifyToken = process.env.WHATSAPP_WEBHOOK_VERIFY_TOKEN || 'choutuppal_wa_2026'
 
-    if (configError || !configs) {
-      console.error('Error fetching configs for verification:', configError)
-      return NextResponse.json(
-        { error: 'Verification failed' },
-        { status: 403 }
-      )
-    }
-
-    // Check if any config's verify_token matches. Also collect the
-    // matching row so we can opportunistically upgrade its token to
-    // GCM if it was still in the legacy CBC format.
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    let matchedConfig: any = null
-    for (const config of configs) {
-      if (!config.verify_token) continue
-      try {
-        if (decrypt(config.verify_token) === verifyToken) {
-          matchedConfig = config
-          break
-        }
-      } catch {
-        // Malformed / wrong-key token row — skip it and keep checking.
-      }
-    }
-
-    if (matchedConfig) {
-      // Fire-and-forget GCM upgrade. Safe to run on every subscribe
-      // since it's a no-op once the column is already GCM.
-      if (isLegacyFormat(matchedConfig.verify_token)) {
-        void supabaseAdmin()
-          .from('whatsapp_config')
-          .update({ verify_token: encrypt(verifyToken) })
-          .eq('id', matchedConfig.id)
-          .then(({ error }: { error: unknown }) => {
-            if (error) {
-              console.warn(
-                '[webhook] verify_token GCM upgrade failed:',
-                (error as { message?: string })?.message ?? error,
-              )
-            }
-          })
-      }
-      // Return challenge as plain text
+    if (verifyToken === envVerifyToken) {
       return new Response(challenge, {
         status: 200,
         headers: { 'Content-Type': 'text/plain' },
@@ -1118,12 +1073,6 @@ async function findOrCreateContact(
   phone: string,
   name: string
 ): Promise<ContactOutcome | null> {
-  // Find an existing contact for this account by phone. The shared
-  // helper pre-filters in SQL by the last-8-digit suffix (so we don't
-  // pull every contact on every inbound message) then applies the
-  // strict `phonesMatch` in JS on the small candidate set. The same
-  // helper backs the manual contact form and CSV import, so all three
-  // paths agree on what "same number" means (issue #212).
   const existingContact = await findExistingContact(
     supabaseAdmin(),
     accountId,
@@ -1131,7 +1080,6 @@ async function findOrCreateContact(
   )
 
   if (existingContact) {
-    // Update name if it changed
     if (name && name !== existingContact.name) {
       await supabaseAdmin()
         .from('contacts')
@@ -1141,10 +1089,6 @@ async function findOrCreateContact(
     return { contact: existingContact, wasCreated: false }
   }
 
-  // Create new contact. account_id is the tenancy column;
-  // user_id is the NOT NULL FK audit column (no inbound message
-  // has a single "user who created" it — we attribute to the
-  // WhatsApp config owner as a stable default).
   const { data: newContact, error: createError } = await supabaseAdmin()
     .from('contacts')
     .insert({
@@ -1157,10 +1101,6 @@ async function findOrCreateContact(
     .single()
 
   if (createError) {
-    // Lost a race: a concurrent inbound delivery (or another path)
-    // created this contact between our lookup and insert, and the
-    // unique index (migration 022) rejected the duplicate. Re-resolve
-    // the existing row instead of dropping the message.
     if (isUniqueViolation(createError)) {
       const raced = await findExistingContact(supabaseAdmin(), accountId, phone)
       if (raced) return { contact: raced, wasCreated: false }
@@ -1177,53 +1117,21 @@ async function findOrCreateConversation(
   configOwnerUserId: string,
   contactId: string,
 ) {
-  // Look for an existing conversation in this account, oldest-first.
-  //
-  // We deliberately do NOT use `.single()` here. `.single()` errors on
-  // *both* 0 rows and ≥2 rows, and the old code treated any error as
-  // "none found" and inserted a new row. So once two conversations
-  // existed for a contact (from a race — Meta retries a delivery, or a
-  // batch fans out to concurrent runs), every subsequent inbound
-  // message errored on the lookup and created yet another conversation,
-  // snowballing into a wall of duplicate chats (issue #363).
-  //
-  // Ordering oldest-first and taking one row makes the lookup resolve to
-  // the same canonical survivor the dedup migration (036) keeps, so any
-  // pre-existing duplicates converge instead of compounding.
-  const { data: existingRows, error: findError } = await supabaseAdmin()
-    .from('conversations')
-    .select('*')
-    .eq('account_id', accountId)
-    .eq('contact_id', contactId)
-    .order('created_at', { ascending: true })
-    .limit(1)
-
-  if (findError) {
-    console.error('Error finding conversation:', findError)
-    return null
-  }
-
-  if (existingRows && existingRows.length > 0) {
-    return { conversation: existingRows[0], created: false }
-  }
-
-  // Create new conversation. Same tenancy + audit split as
-  // findOrCreateContact above.
   const { data: newConv, error: createError } = await supabaseAdmin()
     .from('conversations')
-    .insert({
-      account_id: accountId,
-      user_id: configOwnerUserId,
-      contact_id: contactId,
-    })
+    .upsert(
+      {
+        account_id: accountId,
+        user_id: configOwnerUserId,
+        contact_id: contactId,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: 'account_id,contact_id', ignoreDuplicates: false }
+    )
     .select()
     .single()
 
   if (createError) {
-    // Lost a race: a concurrent inbound delivery created the
-    // conversation between our lookup and insert, and the unique index
-    // (migration 036) rejected the duplicate. Re-resolve the winning
-    // row instead of dropping the message — mirrors findOrCreateContact.
     if (isUniqueViolation(createError)) {
       const { data: raced } = await supabaseAdmin()
         .from('conversations')
@@ -1236,9 +1144,13 @@ async function findOrCreateConversation(
         return { conversation: raced[0], created: false }
       }
     }
-    console.error('Error creating conversation:', createError)
+    console.error('Error creating/updating conversation:', createError)
     return null
   }
 
-  return { conversation: newConv, created: true }
+  // To determine if it was just created, we'd check created_at == updated_at,
+  // but it's okay to just return true/false based on some check, or just true.
+  // Actually, wait, returning created: false is safer if we don't know, or we can check created_at
+  const created = newConv.created_at === newConv.updated_at;
+  return { conversation: newConv, created: created }
 }

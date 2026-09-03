@@ -213,7 +213,7 @@ export function ContactForm({
         }
         return;
       }
-      const message = err instanceof Error ? err.message : t('toastError');
+      const message = err instanceof Error ? err.message : (err as any)?.message || t('toastError');
       toast.error(message);
     } finally {
       setSaving(false);
