@@ -1,0 +1,79 @@
+===== Dashboard Screen======
+1. Plan Status --close
+2. Quick Action (New Campaign, ManageShortLinks) -- short link bad
+3. Recent Activity ( recent contact change to), View All ( click to navigate in contact) --
+
+
+======== Contact Screen =============
+1.Container with Customer/Lead/Agent how can i identify -- pore
+2. 2h ago active how can i find this - pore
+
+======= Contact Details Screen =========
+1.Container with Customer/Lead/Agent how can i identify -- pore
+2. 2h ago active how can i find this -- pore
+3. recent activity bad
+
+3. email is not available in api
+4.also note
+
+======= Add New Contact ===========
+Missing TextField
+
+======= Mene Screen===============
+1. user admin naki customer kivabe bujhbo? pore
+
+
+====== Contacts ======
+1. Search item
+2. Filter
+3. Active 2 / 3 hours ago
+==== Contact Details =====
+1. View Campaigns
+2. Recent Activity
+
+
+=== Font ===
+Heading - Archivo
+Description - Nunito
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+============== Menu Screen Item ================
+1. Profile Setting
+2. two factor authentication
+2. Language
+
+========= Services =======
+1. Deposit
+2. Deposit
+3.
+
+
+===support and help ===
+1.support ticket
+2.privacy policy
+3.Help centrer as FAQ screen
+
+
+suppoert ticket er icon messing icon
+
+
+change of contact screen
+tabs change
+all , active , inactive
+
+
+
+===============
+Chat er status e jhamela ache

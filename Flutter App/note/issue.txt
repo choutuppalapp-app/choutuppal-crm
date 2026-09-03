@@ -1,0 +1,100 @@
+Compare With New OvoWppp Whti Old OvoWpp
+New Dashboard ✅
+ ------------Chat---------------
+1. Old profile tap 4 option [Manage Profile, Manage Contact, Manage Agent, Support Ticket]
+2. Change Whats app Number ✅
+3. Notification
+4. Inbox, Tap Inbox [Profile Edit,Details, Note, Conversation Status] ✅
+
+
+------ Menu ---------
+1. My Account [Edit Profile] ✅
+2. Change Password ✅
+3. Two Factor Authentication ✅
+4. Manage Contact [Manage, Contact, Mange Contact List, Manage Contact Tag] ✅
+5. Manage Agent [Agent List, Add New Agent], Edit, Permission, Delete ✅
+6. Deposit
+7.Withdraw
+8. Language
+9. Privacy Policy
+10. Support ticket 
+
+
+manage contact list er Line 
+
+
+
+
+
+
+
+
+
+
+======================================================
+profile complete e address focus node e problem ache
+1 add social login logic [Linkedin ✅ , Google Login Latest Code not working-- apply new code ❌]
+2. on board 2nd image ❌
+3. login text field clear ✅
+
+social login on off check ✅
+button laoding white to kala ✅
+forget password and reset password er prefix color change ✅
+
+registration screen er private policy and terms of servicews route ✅
+Sign out Dialog e problem ✅
+registration screen er or and bottom e padding ✅
+unused remove 
+
+login registration routing (get.to and get.remove until) ✅
+
+Registration korle dashboard er bar thake na ✅
+
+Edit profile er background color and bottom color will white ✅
+
+Edit profile image thik korte hobe ✅
+
+DefaultText(text: 'Admin', textStyle: MyTextStyle.subHeading12W400()),
+
+language er menu te English selected lanauge thakbe ✅
+
+Edit profile e country thakbe ✅
+ personal information ew counry thakbe  ✅ , address thakbe ✅,
+
+Manage agent er 3 ta design image er color gulo change hobe ✅
+
+Add widthdraw te amount currency show kore na ✅
+currency border ta round hobe ✅
+
+FAQ er item gulo figmar help center er item er design hobe ✅
+
+/copmmented code cclean hobe
+
+
+manage contact er 3 ta item figmar help center er item er design follow hobe ✅
+contact update korar sthe sathe localy oi index er value change kore dite hobe sudhu success holei ✅
+create campaign theke extra field bad dite hbe ✅ ,
+
+
+Create e send at ki hobe karon eta web e ache. ✅
+chat er 15 ta uthiye diyte hobe ✅,
+chat app bar e name er pore phone number er sathe + country code then number ✅ ,
+delete note er dialog e loading button ad kora hoy ✅ nai alert dialog er color change hobe na ✅
+ chat e url purota detect korte pare nai somossa ki ?.
+Dashboard er wallet e click korle deposit screen e cole jabe,✅
+Deposit screen e item gulo ekta border dite hobe figmar moton sudhu background thakbe na ✅,
+withdraw same as deposit screen er moto, create deposit and create withdraw te border hobe.✅
+2 factor er moto border hobe.
+manage shortlink change to manage contact  and manage agent 2 ta add hobe ✅,
+Dashboard er view all er arrow ta pore hobe✅.
+
+
+
+========================================================================
+New Confusion
+1 Campaign Screen e Send Now ar Scheduling er ki kaj
+
+
+
+Home controller er currentChatIndex store kora ache. 
+
