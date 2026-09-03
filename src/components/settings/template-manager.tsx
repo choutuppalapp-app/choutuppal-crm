@@ -516,7 +516,8 @@ export function TemplateManager() {
         </Card>
       ) : (
         <div className="grid gap-3 xl:grid-cols-2">
-          {templates.map((template) => {
+          {templates?.map((template) => {
+            if (!template) return null;
             const statusKey = template.status || 'DRAFT';
             const status = templateStatusConfig[statusKey];
             return (
@@ -524,14 +525,14 @@ export function TemplateManager() {
                 <CardContent className="flex items-start justify-between pt-4">
                   <div className="space-y-2 min-w-0 flex-1">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <h3 className="font-medium text-foreground">{template.name}</h3>
+                      <h3 className="font-medium text-foreground">{template.name || 'Unnamed'}</h3>
                       <Badge
                         className={`text-xs border ${categoryColors[template.category] || ''}`}
                       >
-                        {template.category}
+                        {template.category || 'Unknown'}
                       </Badge>
-                      <Badge className={`text-xs border ${status.classes}`}>
-                        {status.label}
+                      <Badge className={`text-xs border ${status?.classes || 'bg-slate-600/20 text-muted-foreground border-slate-600/30'}`}>
+                        {status?.label || statusKey}
                       </Badge>
                       {template.language && (
                         <span className="text-xs text-muted-foreground uppercase">
