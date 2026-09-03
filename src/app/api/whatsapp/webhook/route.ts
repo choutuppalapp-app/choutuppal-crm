@@ -232,25 +232,40 @@ async function processWebhook(body: { entry?: WhatsAppWebhookEntry[] }) {
         continue
       }
 
-      if (!configRows || configRows.length === 0) {
-        console.error('No config found for phone_number_id:', phoneNumberId)
-        continue
-      }
+      const dummyUUID = '00000000-0000-0000-0000-000000000000'
+      let config = configRows && configRows.length > 0 ? configRows[0] : null
+      
+      if (!config) {
+        console.error('No config found for phone_number_id:', phoneNumberId, '- using dummy UUID for account_id')
+        
+        await supabaseAdmin()
+          .from('accounts')
+          .insert({ id: dummyUUID, name: 'Unlinked WhatsApp Accounts' })
+          .select()
+          .maybeSingle()
 
-      if (configRows.length > 1) {
+        config = {
+          account_id: dummyUUID,
+          user_id: dummyUUID,
+          access_token: '',
+          mirror_inbound_media: false
+        }
+      } else if (configRows.length > 1) {
         console.error(
           `Multiple configs (${configRows.length}) found for phone_number_id:`,
           phoneNumberId,
-          '— inbound message dropped. Resolve duplicates so each number maps to a single account.',
-          'Account owners:',
-          configRows.map((r: { account_id: string; user_id: string }) => `${r.account_id} (admin ${r.user_id})`)
+          '— resolving to first one to avoid drop.'
         )
-        continue
       }
 
-      const config = configRows[0]
-
-      const decryptedAccessToken = decrypt(config.access_token)
+      let decryptedAccessToken = ''
+      if (config.access_token) {
+        try {
+          decryptedAccessToken = decrypt(config.access_token)
+        } catch (e) {
+          console.error('Error decrypting access token', e)
+        }
+      }
 
       for (let i = 0; i < value.messages.length; i++) {
         const message = value.messages[i]
