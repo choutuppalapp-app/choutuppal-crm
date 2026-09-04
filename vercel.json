@@ -1,17 +1,24 @@
 {
   "version": 2,
+  "framework": null,
   "builds": [
     {
       "src": "core/public/index.php",
-      "use": "vercel-php@0.6.0",
-      "config": {
-        "version": "8.2.0"
-      }
+      "use": "vercel-php@0.6.0"
     }
   ],
   "routes": [
-    { "src": "/build/(.*)", "dest": "/core/public/build/$1" },
-    { "src": "/assets/(.*)", "dest": "/core/public/assets/$1" },
-    { "src": "/(.*)", "dest": "/core/public/index.php" }
+    {
+      "src": "/build/(.*)",
+      "dest": "/core/public/build/$1"
+    },
+    {
+      "src": "/assets/(.*)",
+      "dest": "/core/public/assets/$1"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/core/public/index.php"
+    }
   ]
 }
