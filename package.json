@@ -1,5 +1,5 @@
 {
   "scripts": {
-    "vercel-build": "composer install --working-dir=core --no-dev && cd core && npm install && npm run build"
+    "vercel-build": "cd core && npm install && npm run build"
   }
 }
