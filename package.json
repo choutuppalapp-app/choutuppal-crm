@@ -1,5 +1,0 @@
-{
-  "scripts": {
-    "vercel-build": "cd core && npm install && npm run build"
-  }
-}

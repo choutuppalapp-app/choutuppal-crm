@@ -3,22 +3,22 @@
   "framework": null,
   "builds": [
     {
-      "src": "core/public/index.php",
+      "src": "public/index.php",
       "use": "vercel-php@0.6.0"
     }
   ],
   "routes": [
     {
       "src": "/build/(.*)",
-      "dest": "/core/public/build/$1"
+      "dest": "/public/build/$1"
     },
     {
       "src": "/assets/(.*)",
-      "dest": "/core/public/assets/$1"
+      "dest": "/public/assets/$1"
     },
     {
       "src": "/(.*)",
-      "dest": "/core/public/index.php"
+      "dest": "/public/index.php"
     }
   ]
 }
