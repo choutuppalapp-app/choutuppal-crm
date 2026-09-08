@@ -1,69 +1,97 @@
-import Image from "next/image";
+'use client'
 
-export default function Home() {
+import { useState } from 'react'
+import { Send, Users, MessageCircle, Settings } from 'lucide-react'
+
+export default function Dashboard() {
+  const [phone, setPhone] = useState('')
+  const [message, setMessage] = useState('')
+  const [status, setStatus] = useState('')
+
+  const handleSend = async () => {
+    setStatus('Sending...')
+    try {
+      const res = await fetch('/api/whatsapp/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ to: phone, text: message })
+      })
+      const data = await res.json()
+      if (data.success) {
+        setStatus('Message sent successfully!')
+        setPhone('')
+        setMessage('')
+      } else {
+        setStatus(`Error: ${data.error}`)
+      }
+    } catch (e) {
+      setStatus('Failed to send.')
+    }
+  }
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert h-5 w-[100px]"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the{" "}
-            <code className="rounded bg-black/[.06] px-1.5 py-0.5 font-mono text-[0.9em] dark:bg-white/[.08]">
-              page.tsx
-            </code>{" "}
-            file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+    <div className="min-h-screen bg-gray-50 p-8 text-black">
+      <div className="max-w-5xl mx-auto">
+        <h1 className="text-3xl font-bold mb-8">Choutuppal CRM Dashboard</h1>
+        
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          <div className="bg-white p-6 rounded-xl shadow-sm border flex items-center space-x-4">
+            <div className="p-3 bg-blue-100 rounded-lg text-blue-600"><Users size={24} /></div>
+            <div>
+              <p className="text-sm text-gray-500">Total Contacts</p>
+              <p className="text-2xl font-bold">0</p>
+            </div>
+          </div>
+          <div className="bg-white p-6 rounded-xl shadow-sm border flex items-center space-x-4">
+            <div className="p-3 bg-green-100 rounded-lg text-green-600"><MessageCircle size={24} /></div>
+            <div>
+              <p className="text-sm text-gray-500">Messages Sent</p>
+              <p className="text-2xl font-bold">0</p>
+            </div>
+          </div>
+          <div className="bg-white p-6 rounded-xl shadow-sm border flex items-center space-x-4">
+            <div className="p-3 bg-purple-100 rounded-lg text-purple-600"><Settings size={24} /></div>
+            <div>
+              <p className="text-sm text-gray-500">System Status</p>
+              <p className="text-2xl font-bold text-green-600">Online</p>
+            </div>
+          </div>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert h-[14px] w-4"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+
+        <div className="bg-white p-6 rounded-xl shadow-sm border">
+          <h2 className="text-xl font-semibold mb-4">Send Test Message</h2>
+          <div className="space-y-4 max-w-md">
+            <div>
+              <label className="block text-sm font-medium mb-1">WhatsApp Number (with country code)</label>
+              <input 
+                type="text" 
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                placeholder="e.g. 919876543210"
+                className="w-full border p-2 rounded focus:ring-2 outline-none text-black"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">Message</label>
+              <textarea 
+                value={message}
+                onChange={(e) => setMessage(e.target.value)}
+                placeholder="Type your message..."
+                className="w-full border p-2 rounded focus:ring-2 outline-none text-black"
+                rows={3}
+              />
+            </div>
+            <button 
+              onClick={handleSend}
+              className="bg-blue-600 text-white px-4 py-2 rounded flex items-center hover:bg-blue-700 transition"
+            >
+              <Send size={18} className="mr-2" />
+              Send Message
+            </button>
+            {status && <p className="text-sm mt-2 text-gray-600">{status}</p>}
+          </div>
         </div>
-      </main>
+      </div>
     </div>
-  );
+  )
 }
