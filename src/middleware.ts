@@ -48,7 +48,7 @@ export async function middleware(request: NextRequest) {
       (request.nextUrl.pathname === '/login' ||
         request.nextUrl.pathname === '/signup')
     ) {
-      url.pathname = /join/${encodeURIComponent(inviteToken)}
+      url.pathname = "/join/$(" + encodeURIComponent(inviteToken) + ")"
       url.search = ''
     } else {
       url.pathname = '/dashboard'
